@@ -1,0 +1,2927 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>APEX Casino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CSS VARIABLES & RESET
+============================================================ */
+:root {
+  --bg:       #0a0c14;
+  --bg2:      #111522;
+  --bg3:      #181d2e;
+  --card:     #1a2035;
+  --border:   #252d45;
+  --gold:     #f5c842;
+  --gold2:    #e0a800;
+  --cyan:     #00e5ff;
+  --purple:   #7c3aed;
+  --green:    #00e676;
+  --red:      #ff1744;
+  --orange:   #ff6d00;
+  --pink:     #e91e8c;
+  --text:     #e8eaf6;
+  --text2:    #7986cb;
+  --text3:    #455070;
+  --radius:   16px;
+  --shadow:   0 8px 32px rgba(0,0,0,0.5);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+/* ============================================================
+   FIX 2: GLOBAL user-select: none on everything interactive
+   + pointer-events: none on ALL child text nodes
+============================================================ */
+* {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+/* Re-allow text selection only in number inputs */
+input[type=number] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+button, .btn, .bet-quick-btn, .choice-btn, .mine-cell,
+.mines-count-btn, .back-btn, .game-card, .bonus-bar,
+.device-btn {
+  cursor: pointer;
+}
+/* Children of all buttons can't steal the click */
+.btn > *, .choice-btn > *, .mine-cell > *, .back-btn > *,
+.bet-quick-btn > *, .mines-count-btn > *, .device-btn > * {
+  pointer-events: none;
+}
+
+body {
+  font-family: 'Exo 2', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  /* default mobile — JS will switch to pc-mode */
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+}
+/* PC mode: wider layout */
+body.pc-mode {
+  max-width: 820px;
+}
+body.pc-mode .screen {
+  max-width: 820px;
+}
+body.pc-mode .games-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+body.pc-mode .dice-arena,
+body.pc-mode .flip-arena,
+body.pc-mode .crash-canvas-wrap,
+body.pc-mode .come-canvas-wrap {
+  max-width: 600px; margin-left: auto; margin-right: auto;
+}
+body.pc-mode .hilo-arena { max-width: 600px; margin-left:auto; margin-right:auto; }
+
+/* ============================================================
+   DEVICE SELECT SCREEN
+============================================================ */
+#screen-device {
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0; padding: 40px 32px;
+  z-index: 50;
+}
+.device-logo {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 48px; font-weight: 700; letter-spacing: 6px;
+  background: linear-gradient(135deg, var(--gold), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.device-tagline {
+  font-size: 13px; color: var(--text3); letter-spacing: 3px;
+  text-transform: uppercase; margin-bottom: 48px;
+}
+.device-question {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px; font-weight: 600; letter-spacing: 1px;
+  color: var(--text); margin-bottom: 28px; text-align: center;
+}
+.device-btns {
+  display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 320px;
+}
+.device-btn {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 24px;
+  border-radius: 16px; border: 1.5px solid var(--border);
+  background: var(--card); cursor: pointer;
+  transition: all 0.22s; user-select: none;
+}
+.device-btn:hover, .device-btn:active {
+  border-color: var(--cyan);
+  background: rgba(0,229,255,0.07);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,229,255,0.12);
+}
+.device-btn-icon { font-size: 36px; flex-shrink: 0; }
+.device-btn-info h3 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 20px; font-weight: 700; letter-spacing: 1px;
+}
+.device-btn-info p { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.device-deco {
+  font-size: 80px; margin-bottom: 16px;
+  animation: float-deco 3s ease-in-out infinite;
+}
+@keyframes float-deco {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+/* Background stars effect */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(124,58,237,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(0,229,255,0.08) 0%, transparent 50%);
+  pointer-events:none; z-index:0;
+}
+
+/* ============================================================
+   SCREENS
+============================================================ */
+.screen {
+  position: fixed; inset: 0;
+  max-width: 480px; margin: 0 auto;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  transform: translateY(20px);
+  overflow-y: auto; overflow-x: hidden;
+  z-index: 1;
+}
+.screen.active {
+  opacity: 1; pointer-events: all; transform: translateY(0);
+}
+.screen.slide-out {
+  opacity: 0; transform: translateY(-20px);
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+.header {
+  background: linear-gradient(180deg, var(--bg2) 0%, transparent 100%);
+  padding: 16px 20px 12px;
+  position: sticky; top: 0; z-index: 10;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.logo {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 26px; font-weight: 700; letter-spacing: 3px;
+  background: linear-gradient(135deg, var(--gold), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.coins-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(245,200,66,0.12);
+  border: 1px solid rgba(245,200,66,0.3);
+  padding: 6px 14px; border-radius: 30px;
+  font-weight: 700; font-size: 15px; color: var(--gold);
+}
+.coins-badge span { font-size: 18px; }
+
+/* Stats bar */
+.stats-bar {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.stat-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px; text-align: center;
+}
+.stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
+.stat-value { font-size: 14px; font-weight: 700; color: var(--cyan); margin-top: 2px; }
+
+/* Bonus timer */
+.bonus-bar {
+  background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(0,229,255,0.1));
+  border: 1px solid rgba(0,229,255,0.2);
+  border-radius: 10px; padding: 8px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 10px 20px 0;
+}
+.bonus-text { font-size: 12px; color: var(--text2); }
+.bonus-timer { font-size: 14px; font-weight: 700; color: var(--cyan); font-family: 'Rajdhani', sans-serif; }
+.bonus-ready {
+  background: linear-gradient(135deg, rgba(0,230,118,0.2), rgba(0,229,255,0.1));
+  border-color: rgba(0,230,118,0.4);
+  cursor: pointer; animation: pulse-green 1.5s infinite;
+}
+@keyframes pulse-green {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,230,118,0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(0,230,118,0); }
+}
+
+/* ============================================================
+   GAME GRID
+============================================================ */
+.games-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 14px; padding: 16px 20px 100px;
+}
+
+.game-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0; overflow: hidden;
+  cursor: pointer; position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  aspect-ratio: 1;
+  display: flex; flex-direction: column;
+  justify-content: flex-end;
+}
+.game-card:active { transform: scale(0.95); }
+.game-card:hover { box-shadow: 0 0 30px rgba(0,229,255,0.1); }
+
+.game-card-bg {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 64px;
+  background: linear-gradient(135deg, var(--c1), var(--c2));
+  overflow: hidden;
+}
+.game-card-bg::after {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.08) 0%, transparent 70%);
+}
+.game-card[data-game="dice"]  { --c1: #0d4f7c; --c2: #0a8fb5; }
+.game-card[data-game="mines"] { --c1: #4a1080; --c2: #7c3aed; }
+.game-card[data-game="hilo"]  { --c1: #8b0000; --c2: #c0392b; }
+.game-card[data-game="crash"] { --c1: #1a3a1a; --c2: #27ae60; }
+.game-card[data-game="flip"]  { --c1: #1a1a4a; --c2: #8e44ad; }
+.game-card[data-game="come"]  { --c1: #6b2100; --c2: #e65100; }
+
+.game-card-label {
+  position: relative; z-index: 2;
+  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+  padding: 16px 14px 14px;
+}
+.game-card-label h3 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.game-card-label p { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+.coming-soon {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.6); z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; letter-spacing: 2px; color: var(--text3);
+  text-transform: uppercase; font-weight: 700;
+}
+
+/* Dice emoji anim */
+.dice-emoji { animation: dice-spin 4s infinite; display: inline-block; }
+@keyframes dice-spin {
+  0%,85%,100% { transform: rotate(0deg) scale(1); }
+  90% { transform: rotate(180deg) scale(1.1); }
+  95% { transform: rotate(270deg) scale(0.9); }
+}
+
+/* ============================================================
+   GAME SCREEN BASE
+============================================================ */
+.game-screen {
+  background: var(--bg);
+  padding-bottom: 40px;
+}
+.game-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+.back-btn {
+  width: 36px; height: 36px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px;
+  transition: background 0.2s;
+}
+.back-btn:active { background: var(--border); }
+.game-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.balance-mini {
+  margin-left: auto;
+  font-size: 13px; font-weight: 700; color: var(--gold);
+}
+
+/* ============================================================
+   BET PANEL (shared)
+============================================================ */
+.bet-panel {
+  margin: 16px 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.bet-panel h4 {
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 1.5px; color: var(--text3); margin-bottom: 10px;
+}
+.bet-row {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 12px;
+}
+.bet-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 14px;
+  color: var(--text); font-size: 18px; font-weight: 700;
+  font-family: 'Exo 2', sans-serif;
+  text-align: center; outline: none;
+  transition: border-color 0.2s;
+}
+.bet-input:focus { border-color: var(--cyan); }
+.bet-quick {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.bet-quick-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px; font-size: 11px; font-weight: 600;
+  color: var(--text2); cursor: pointer;
+  transition: all 0.2s;
+}
+.bet-quick-btn:active { background: var(--border); color: var(--text); transform: scale(0.95); }
+
+.slider-wrap { margin-bottom: 12px; }
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 6px;
+  background: var(--bg3); border-radius: 3px; outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  border-radius: 50%; cursor: pointer;
+  box-shadow: 0 0 8px rgba(0,229,255,0.5);
+}
+
+/* ============================================================
+   BUTTONS
+============================================================ */
+.btn {
+  width: 100%;
+  padding: 14px 20px;
+  border: none; border-radius: 12px;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 16px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.btn::after {
+  content:''; position:absolute; inset:0;
+  background: rgba(255,255,255,0);
+  transition: background 0.15s;
+}
+.btn:active::after { background: rgba(255,255,255,0.1); }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 100%);
+  color: #fff; box-shadow: 0 4px 20px rgba(0,229,255,0.25);
+}
+.btn-green {
+  background: linear-gradient(135deg, #00c853 0%, #00e676 100%);
+  color: #000; box-shadow: 0 4px 20px rgba(0,230,118,0.3);
+}
+.btn-red {
+  background: linear-gradient(135deg, #c62828 0%, #ff1744 100%);
+  color: #fff;
+}
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold2) 0%, var(--gold) 100%);
+  color: #000; box-shadow: 0 4px 20px rgba(245,200,66,0.3);
+}
+.btn-ghost {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+.btn:disabled {
+  opacity: 0.4; cursor: not-allowed; transform: none !important;
+}
+
+/* ============================================================
+   RESULT OVERLAY
+============================================================ */
+.result-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.result-overlay.show { opacity: 1; pointer-events: all; }
+.result-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 32px 28px;
+  text-align: center;
+  width: 85%;
+  transform: scale(0.8);
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.result-overlay.show .result-box { transform: scale(1); }
+.result-emoji { font-size: 64px; display: block; margin-bottom: 12px; }
+.result-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 32px; font-weight: 700; letter-spacing: 2px;
+}
+.result-amount { font-size: 24px; font-weight: 700; margin: 8px 0; }
+.result-win .result-title { color: var(--green); }
+.result-win .result-amount { color: var(--gold); }
+.result-lose .result-title { color: var(--red); }
+.result-lose .result-amount { color: var(--red); }
+
+/* ============================================================
+   ============  DICE GAME  ============
+============================================================ */
+.dice-arena {
+  margin: 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  min-height: 180px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px;
+}
+/* ============================================================
+   FIX 3: DICE — DOM dot-based dice (white bg, black dots)
+============================================================ */
+.dice-display {
+  display: flex; gap: 24px; justify-content: center;
+}
+.die {
+  width: 82px; height: 82px;
+  background: #ffffff;
+  border-radius: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 10px; gap: 4px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6), 4px 4px 0 #aaaaaa,
+              inset 0 1px 0 rgba(255,255,255,0.9);
+  transition: transform 0.1s;
+  position: relative;
+}
+.die-dot {
+  width: 100%; height: 100%;
+  background: #1a1a2e;
+  border-radius: 50%;
+  transition: opacity 0.1s;
+}
+.die-dot.hidden { opacity: 0; }
+.die.rolling { animation: die-roll 0.65s ease; }
+@keyframes die-roll {
+  0%   { transform: rotate(0deg)   scale(1);    }
+  20%  { transform: rotate(72deg)  scale(1.12); }
+  40%  { transform: rotate(144deg) scale(0.88); }
+  60%  { transform: rotate(216deg) scale(1.08); }
+  80%  { transform: rotate(288deg) scale(0.95); }
+  100% { transform: rotate(360deg) scale(1);    }
+}
+.dice-sum-display {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 48px; font-weight: 700; color: var(--gold);
+}
+.dice-sum-display small { font-size: 16px; color: var(--text3); display: block; }
+
+.dice-choice-btns {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin: 0 20px 16px;
+}
+.choice-btn {
+  padding: 16px 12px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer; transition: all 0.2s;
+  text-align: center;
+}
+.choice-btn.selected {
+  border-color: var(--cyan);
+  background: rgba(0,229,255,0.08);
+  box-shadow: 0 0 16px rgba(0,229,255,0.15);
+}
+.choice-btn:active { transform: scale(0.96); }
+.choice-btn-icon { font-size: 28px; }
+.choice-btn-label { font-size: 12px; font-weight: 700; margin-top: 4px; color: var(--text2); }
+.choice-btn.selected .choice-btn-label { color: var(--cyan); }
+.choice-pct { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* ============================================================
+   ============  MINES GAME  ============
+============================================================ */
+.mines-info {
+  display: flex; gap: 10px; margin: 0 20px 16px;
+}
+.mines-info-card {
+  flex: 1; background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px;
+  text-align: center;
+}
+.mines-info-card .label { font-size: 10px; color: var(--text3); text-transform: uppercase; }
+.mines-info-card .value { font-size: 20px; font-weight: 700; color: var(--gold); margin-top: 4px; }
+
+.mines-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 8px; padding: 0 20px;
+}
+.mine-cell {
+  aspect-ratio: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; cursor: pointer;
+  transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.mine-cell:active:not(.revealed) { transform: scale(0.9); }
+.mine-cell.revealed-safe {
+  background: linear-gradient(135deg, rgba(0,200,83,0.2), rgba(0,230,118,0.1));
+  border-color: rgba(0,230,118,0.4);
+  cursor: default;
+  animation: pop-in 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.mine-cell.revealed-bomb {
+  background: linear-gradient(135deg, rgba(198,40,40,0.3), rgba(255,23,68,0.2));
+  border-color: rgba(255,23,68,0.5);
+  cursor: default;
+  animation: shake 0.4s ease;
+}
+.mine-cell.game-over { cursor: default; opacity: 0.6; }
+@keyframes pop-in {
+  0% { transform: scale(0.7); }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.mines-count-row {
+  display: flex; gap: 8px; margin: 0 20px 12px; flex-wrap: wrap;
+}
+.mines-count-btn {
+  flex: 1; min-width: 50px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 4px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  color: var(--text2); text-align: center;
+  transition: all 0.2s;
+}
+.mines-count-btn.active {
+  border-color: var(--purple);
+  background: rgba(124,58,237,0.15);
+  color: #c084fc;
+}
+
+/* ============================================================
+   ============  HILO GAME  ============
+============================================================ */
+.hilo-arena {
+  margin: 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+}
+.hilo-multiplier {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 42px; font-weight: 700;
+  color: var(--gold); margin-bottom: 8px;
+}
+.hilo-multiplier small { font-size: 16px; color: var(--text3); }
+
+.card-display {
+  display: flex; gap: 12px; justify-content: center;
+  align-items: center; flex-wrap: wrap;
+  margin: 12px 0;
+}
+.playing-card {
+  width: 72px; height: 100px;
+  background: linear-gradient(180deg, #fff 0%, #f0f0f0 100%);
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  position: relative; overflow: hidden;
+  flex-shrink: 0;
+  transition: transform 0.3s;
+}
+.playing-card.current {
+  width: 90px; height: 126px;
+  box-shadow: 0 0 24px rgba(245,200,66,0.4), 0 4px 12px rgba(0,0,0,0.5);
+  border: 2px solid var(--gold);
+  animation: card-appear 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes card-appear {
+  0% { transform: translateY(-20px) scale(0.8); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.playing-card .rank {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px; font-weight: 700;
+}
+.playing-card.current .rank { font-size: 28px; }
+.playing-card .suit { font-size: 20px; margin-top: 4px; }
+.playing-card.current .suit { font-size: 26px; }
+.playing-card.red-card .rank,
+.playing-card.red-card .suit { color: #c0392b; }
+.playing-card.black-card .rank,
+.playing-card.black-card .suit { color: #1a1a2e; }
+.playing-card.face-down {
+  background: linear-gradient(135deg, #1a237e, #283593);
+  border: 2px solid rgba(255,255,255,0.1);
+}
+.card-back-pattern {
+  width: 50px; height: 70px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 4px;
+  background: repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 6px);
+}
+.card-history-label { font-size: 11px; color: var(--text3); margin-bottom: 8px; }
+
+.hilo-choice-btns {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin: 0 20px 10px;
+}
+
+/* ============================================================
+   TOAST NOTIFICATION
+============================================================ */
+.toast {
+  position: fixed; bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-size: 14px; font-weight: 600;
+  z-index: 200;
+  opacity: 0; transition: all 0.3s;
+  white-space: nowrap;
+}
+.toast.show {
+  opacity: 1; transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================================
+   ACHIEVEMENTS
+============================================================ */
+.achievements-banner {
+  position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-100px);
+  background: linear-gradient(135deg, var(--gold2), var(--gold));
+  color: #000; border-radius: 12px; padding: 12px 20px;
+  font-weight: 700; z-index: 300;
+  transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap;
+}
+.achievements-banner.show { transform: translateX(-50%) translateY(0); }
+
+/* ============================================================
+   LEVEL UP OVERLAY
+============================================================ */
+.levelup-overlay {
+  position: fixed; inset:0; z-index:200;
+  display:flex; align-items:center; justify-content:center;
+  background: rgba(0,0,0,0.8);
+  opacity:0; pointer-events:none;
+  transition: opacity 0.3s;
+}
+.levelup-overlay.show { opacity:1; pointer-events:all; }
+.levelup-box {
+  text-align:center;
+  transform: scale(0.5);
+  transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+.levelup-overlay.show .levelup-box { transform: scale(1); }
+.levelup-box .big-emoji { font-size: 80px; }
+.levelup-box h2 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 40px; letter-spacing: 4px;
+  background: linear-gradient(135deg, var(--gold), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+/* ============================================================
+   BOTTOM NAV (placeholder style)
+============================================================ */
+.section-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px; font-weight: 600; letter-spacing: 2px;
+  color: var(--text3); text-transform: uppercase;
+  padding: 0 20px 10px;
+}
+
+/* ============================================================
+   EXP BAR
+============================================================ */
+.exp-bar-wrap {
+  margin: 0 20px 10px;
+  background: var(--bg3);
+  border-radius: 30px; height: 6px; overflow: hidden;
+}
+.exp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple), var(--cyan));
+  border-radius: 30px;
+  transition: width 0.5s ease;
+}
+
+/* ============================================================
+   SCROLLBAR
+============================================================ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ============================================================
+   MISC
+============================================================ */
+.divider { height: 1px; background: var(--border); margin: 0 20px 16px; }
+.inline-btns { display: flex; gap: 10px; margin: 0 20px 12px; }
+.inline-btns .btn { flex: 1; }
+.text-center { text-align: center; }
+.mt8 { margin-top: 8px; }
+.shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); background-size: 200%; animation: shimmer 2s infinite; }
+@keyframes shimmer { 0% { background-position: -200%; } 100% { background-position: 200%; } }
+
+/* Coin rain */
+.coin-particle {
+  position: fixed; pointer-events: none; z-index: 500;
+  font-size: 20px;
+  animation: fall-coin 1.2s ease forwards;
+}
+@keyframes fall-coin {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(80px) rotate(360deg); opacity: 0; }
+}
+
+/* ============================================================
+   FLIP GAME ARENA
+============================================================ */
+.flip-arena {
+  margin: 20px; display: flex; flex-direction: column;
+  align-items: center; gap: 20px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 30px 20px;
+}
+
+/* ============================================================
+   FIX 4: FLIP COIN — controlled rotation to land on correct face
+============================================================ */
+.coin-3d {
+  width: 120px; height: 120px; position: relative;
+  perspective: 500px; cursor: default;
+}
+.coin-3d-inner {
+  width: 100%; height: 100%; position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.05s linear;
+  border-radius: 50%;
+}
+/* Spinning phase — fast rotations */
+.coin-3d.spinning .coin-3d-inner {
+  animation: coin-spin-fast 0.9s linear 0s 1 forwards;
+}
+/* Land on HEADS (front face) — rotateY lands on 0 / 360 */
+.coin-3d.land-heads .coin-3d-inner {
+  animation: coin-land-heads 0.35s ease-out forwards;
+}
+/* Land on TAILS (back face) — rotateY lands on 180 */
+.coin-3d.land-tails .coin-3d-inner {
+  animation: coin-land-tails 0.35s ease-out forwards;
+}
+@keyframes coin-spin-fast {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(1800deg); } /* 5 full spins */
+}
+@keyframes coin-land-heads {
+  from { transform: rotateY(1800deg); }
+  to   { transform: rotateY(1800deg); } /* stays showing front (even multiple of 360) */
+}
+@keyframes coin-land-tails {
+  from { transform: rotateY(1800deg); }
+  to   { transform: rotateY(1980deg); } /* +180 = back face */
+}
+.coin-face, .coin-back {
+  position: absolute; inset: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 52px; backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+}
+.coin-face {
+  background: radial-gradient(circle at 35% 35%, #ffe566, #e0a800);
+  border: 4px solid #c8860a;
+}
+.coin-back {
+  background: radial-gradient(circle at 35% 35%, #d4b896, #a07040);
+  border: 4px solid #7a5028;
+  transform: rotateY(180deg);
+}
+.flip-result-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 28px; font-weight: 700; letter-spacing: 2px;
+  min-height: 36px; color: var(--gold);
+}
+.flip-choice-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin: 0 20px 14px;
+}
+
+/* ============================================================
+   CRASH GAME CSS
+============================================================ */
+.crash-canvas-wrap {
+  margin: 16px 20px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  position: relative; height: 230px;
+}
+#crash-canvas {
+  width: 100%; height: 100%; display: block;
+}
+.crash-multiplier-overlay {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center; pointer-events: none;
+}
+.crash-multi-value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 56px; font-weight: 700; line-height: 1;
+  color: var(--green);
+  text-shadow: 0 0 30px rgba(0,230,118,0.6);
+  transition: color 0.2s;
+}
+.crash-multi-value.danger { color: var(--red); text-shadow: 0 0 30px rgba(255,23,68,0.6); }
+.crash-multi-label {
+  font-size: 13px; color: var(--text3); letter-spacing: 2px;
+}
+.crash-status {
+  position: absolute; top: 10px; left: 14px;
+  font-size: 12px; font-weight: 700; letter-spacing: 1px;
+  color: var(--text3); text-transform: uppercase;
+}
+.crash-rocket {
+  position: absolute; font-size: 28px;
+  transition: bottom 0.1s linear, left 0.1s linear;
+  filter: drop-shadow(0 0 8px rgba(255,100,0,0.8));
+  pointer-events: none;
+}
+.crash-explosion {
+  position: absolute; font-size: 64px;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  animation: explode 0.5s ease forwards;
+  pointer-events: none;
+}
+@keyframes explode {
+  0%  { transform: translate(-50%,-50%) scale(0.5); opacity: 1; }
+  60% { transform: translate(-50%,-50%) scale(1.5); opacity: 1; }
+  100%{ transform: translate(-50%,-50%) scale(2);   opacity: 0; }
+}
+.crash-graph-line {
+  stroke: var(--green); stroke-width: 2.5; fill: none;
+  filter: drop-shadow(0 0 4px rgba(0,230,118,0.6));
+}
+.crash-info-row {
+  display: flex; gap: 10px; margin: 0 20px 14px;
+}
+.crash-info-pill {
+  flex: 1; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px; text-align: center;
+}
+.crash-info-pill .label { font-size: 10px; color: var(--text3); text-transform: uppercase; }
+.crash-info-pill .value { font-size: 16px; font-weight: 700; color: var(--gold); margin-top: 2px; }
+
+/* ============================================================
+   COME (Arcade) GAME CSS
+============================================================ */
+.come-canvas-wrap {
+  margin: 10px 20px;
+  background: linear-gradient(180deg, #0a1628 0%, #0d2040 100%);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; position: relative;
+  touch-action: none; /* prevent scroll during gameplay */
+}
+#come-canvas { display: block; width: 100%; }
+.come-hud {
+  display: flex; gap: 10px; margin: 0 20px 10px;
+}
+.come-hud-pill {
+  flex: 1; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px; text-align: center;
+}
+.come-hud-pill .label { font-size: 10px; color: var(--text3); text-transform: uppercase; }
+.come-hud-pill .value { font-size: 16px; font-weight: 700; color: var(--gold); margin-top: 2px; }
+.come-overlay-text {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+  font-family: 'Rajdhani', sans-serif; text-align: center;
+  pointer-events: none;
+}
+.come-overlay-text h2 {
+  font-size: 30px; letter-spacing: 3px;
+  background: linear-gradient(135deg, var(--gold), var(--orange));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.come-overlay-text p { font-size: 14px; color: var(--text2); margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- ==================== DEVICE SELECT ==================== -->
+<div class="screen active" id="screen-device">
+  <div class="device-deco">🎰</div>
+  <div class="device-logo">⚡ APEX</div>
+  <div class="device-tagline">Casino · Jugá donde quieras</div>
+  <div class="device-question">¿Desde dónde estás jugando?</div>
+  <div class="device-btns">
+    <div class="device-btn" onclick="selectDevice('mobile')">
+      <div class="device-btn-icon">📱</div>
+      <div class="device-btn-info">
+        <h3>Celular</h3>
+        <p>Diseño compacto, táctil y fluido</p>
+      </div>
+    </div>
+    <div class="device-btn" onclick="selectDevice('pc')">
+      <div class="device-btn-icon">🖥️</div>
+      <div class="device-btn-info">
+        <h3>Computadora</h3>
+        <p>Diseño amplio, centrado y cómodo</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MAIN MENU ==================== -->
+<div class="screen" id="screen-home">
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">⚡ APEX</div>
+      <div class="coins-badge" id="home-coins">
+        <span>🪙</span> <span id="coins-display">0</span>
+      </div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-label">Nivel</div>
+        <div class="stat-value" id="stat-level">1</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">EXP</div>
+        <div class="stat-value" id="stat-exp">0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Jugadas</div>
+        <div class="stat-value" id="stat-plays">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="exp-bar-wrap">
+    <div class="exp-bar-fill" id="exp-bar" style="width:0%"></div>
+  </div>
+
+  <div class="bonus-bar" id="bonus-bar">
+    <div>
+      <div class="bonus-text">⚡ Bonificación en</div>
+      <div class="bonus-timer" id="bonus-timer">2:30</div>
+    </div>
+    <div style="font-size:11px; color:var(--text3)">+1.000 monedas</div>
+  </div>
+
+  <div style="padding: 16px 20px 8px;">
+    <div class="section-title">🎮 Juegos</div>
+  </div>
+
+  <div class="games-grid">
+    <!-- DICE -->
+    <div class="game-card" data-game="dice" onclick="openGame('dice')">
+      <div class="game-card-bg"><span class="dice-emoji">🎲</span></div>
+      <div class="game-card-label">
+        <h3>Dice</h3>
+        <p>Adivina la suma</p>
+      </div>
+    </div>
+
+    <!-- MINES -->
+    <div class="game-card" data-game="mines" onclick="openGame('mines')">
+      <div class="game-card-bg">💎</div>
+      <div class="game-card-label">
+        <h3>Mines</h3>
+        <p>Evita las bombas</p>
+      </div>
+    </div>
+
+    <!-- HILO -->
+    <div class="game-card" data-game="hilo" onclick="openGame('hilo')">
+      <div class="game-card-bg">🃏</div>
+      <div class="game-card-label">
+        <h3>Hi-Lo</h3>
+        <p>¿Más alto o bajo?</p>
+      </div>
+    </div>
+
+    <!-- COMING SOON: WHEEL -->
+    <div class="game-card" data-game="wheel" style="--c1:#1a5276;--c2:#2980b9;">
+      <div class="game-card-bg">🎡</div>
+      <div class="game-card-label">
+        <h3>Wheel</h3>
+        <p>Gira la ruleta</p>
+      </div>
+      <div class="coming-soon">Próximamente</div>
+    </div>
+
+    <!-- CRASH -->
+    <div class="game-card" data-game="crash" style="--c1:#1a3a1a;--c2:#27ae60;" onclick="openGame('crash')">
+      <div class="game-card-bg">🚀</div>
+      <div class="game-card-label">
+        <h3>Crash</h3>
+        <p>No te quemes</p>
+      </div>
+    </div>
+
+    <!-- FLIP -->
+    <div class="game-card" data-game="flip" style="--c1:#1a1a4a;--c2:#8e44ad;" onclick="openGame('flip')">
+      <div class="game-card-bg">🪙</div>
+      <div class="game-card-label">
+        <h3>Flip</h3>
+        <p>Cara o Cruz</p>
+      </div>
+    </div>
+
+    <!-- COME (Pou) -->
+    <div class="game-card" data-game="come" style="--c1:#6b2100;--c2:#e65100;" onclick="openGame('come')">
+      <div class="game-card-bg">👾</div>
+      <div class="game-card-label">
+        <h3>Come</h3>
+        <p>¡Atrapa la comida!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DICE GAME ==================== -->
+<div class="screen game-screen" id="screen-dice">
+  <div class="game-header">
+    <div class="back-btn" onclick="closeGame()">←</div>
+    <div class="game-title">🎲 DICE</div>
+    <div class="balance-mini">🪙 <span id="dice-balance">0</span></div>
+  </div>
+
+  <div class="dice-arena">
+    <div class="dice-display">
+      <div class="die" id="die1"></div>
+      <div class="die" id="die2"></div>
+    </div>
+    <div class="dice-sum-display">
+      <span id="dice-sum">–</span>
+      <small>SUMA TOTAL</small>
+    </div>
+  </div>
+
+  <div style="padding: 0 20px 10px;">
+    <div class="section-title">Elige tu apuesta</div>
+  </div>
+
+  <div class="dice-choice-btns">
+    <div class="choice-btn" id="dice-choice-high" onclick="selectDiceChoice('high')">
+      <div class="choice-btn-icon">⬆️</div>
+      <div class="choice-btn-label">MAYOR A 6</div>
+      <div class="choice-pct">✕ 1.9</div>
+    </div>
+    <div class="choice-btn" id="dice-choice-low" onclick="selectDiceChoice('low')">
+      <div class="choice-btn-icon">⬇️</div>
+      <div class="choice-btn-label">MENOR O IGUAL A 6</div>
+      <div class="choice-pct">✕ 1.9</div>
+    </div>
+  </div>
+
+  <div class="bet-panel">
+    <h4>💰 Apuesta</h4>
+    <div class="bet-row">
+      <input type="number" class="bet-input" id="dice-bet" value="100" min="10" max="100000">
+    </div>
+    <div class="bet-quick">
+      <button class="bet-quick-btn" onclick="setBet('dice',100)">100</button>
+      <button class="bet-quick-btn" onclick="setBet('dice',500)">500</button>
+      <button class="bet-quick-btn" onclick="setBet('dice',1000)">1K</button>
+      <button class="bet-quick-btn" onclick="setBet('dice',5000)">5K</button>
+      <button class="bet-quick-btn" onclick="halfBet('dice')">½</button>
+      <button class="bet-quick-btn" onclick="doubleBet('dice')">2×</button>
+      <button class="bet-quick-btn" onclick="maxBet('dice')">MAX</button>
+    </div>
+  </div>
+
+  <div style="padding: 0 20px;">
+    <button class="btn btn-primary" id="dice-roll-btn" onclick="rollDice()">🎲 TIRAR DADOS</button>
+  </div>
+</div>
+
+<!-- ==================== MINES GAME ==================== -->
+<div class="screen game-screen" id="screen-mines">
+  <div class="game-header">
+    <div class="back-btn" onclick="closeGame()">←</div>
+    <div class="game-title">💎 MINES</div>
+    <div class="balance-mini">🪙 <span id="mines-balance">0</span></div>
+  </div>
+
+  <div class="mines-info">
+    <div class="mines-info-card">
+      <div class="label">Multiplicador</div>
+      <div class="value" id="mines-multiplier">1.00×</div>
+    </div>
+    <div class="mines-info-card">
+      <div class="label">Ganancias</div>
+      <div class="value" id="mines-profit">0</div>
+    </div>
+    <div class="mines-info-card">
+      <div class="label">Seguras</div>
+      <div class="value" id="mines-safe-count">0</div>
+    </div>
+  </div>
+
+  <div style="padding: 0 20px 8px;">
+    <div class="section-title">Bombas</div>
+  </div>
+  <div class="mines-count-row">
+    <div class="mines-count-btn active" onclick="setMinesCount(3)">3 💣</div>
+    <div class="mines-count-btn" onclick="setMinesCount(5)">5 💣</div>
+    <div class="mines-count-btn" onclick="setMinesCount(7)">7 💣</div>
+    <div class="mines-count-btn" onclick="setMinesCount(10)">10 💣</div>
+    <div class="mines-count-btn" onclick="setMinesCount(15)">15 💣</div>
+  </div>
+
+  <div class="mines-grid" id="mines-grid"></div>
+
+  <div class="bet-panel" style="margin-top:16px;">
+    <h4>💰 Apuesta</h4>
+    <div class="bet-row">
+      <input type="number" class="bet-input" id="mines-bet" value="100" min="10">
+    </div>
+    <div class="bet-quick">
+      <button class="bet-quick-btn" onclick="setBet('mines',100)">100</button>
+      <button class="bet-quick-btn" onclick="setBet('mines',500)">500</button>
+      <button class="bet-quick-btn" onclick="setBet('mines',1000)">1K</button>
+      <button class="bet-quick-btn" onclick="halfBet('mines')">½</button>
+      <button class="bet-quick-btn" onclick="doubleBet('mines')">2×</button>
+      <button class="bet-quick-btn" onclick="maxBet('mines')">MAX</button>
+    </div>
+  </div>
+
+  <div class="inline-btns">
+    <button class="btn btn-primary" id="mines-start-btn" onclick="startMines()">💎 INICIAR</button>
+    <button class="btn btn-gold" id="mines-cashout-btn" onclick="cashoutMines()" disabled>💰 RETIRAR</button>
+  </div>
+</div>
+
+<!-- ==================== HILO GAME ==================== -->
+<div class="screen game-screen" id="screen-hilo">
+  <div class="game-header">
+    <div class="back-btn" onclick="closeGame()">←</div>
+    <div class="game-title">🃏 HI-LO</div>
+    <div class="balance-mini">🪙 <span id="hilo-balance">0</span></div>
+  </div>
+
+  <div class="hilo-arena">
+    <div class="hilo-multiplier">
+      <span id="hilo-multiplier">1.00</span>×
+      <small>multiplicador</small>
+    </div>
+    <div class="card-history-label">Historial de cartas</div>
+    <div class="card-display" id="hilo-card-display">
+      <div class="playing-card face-down">
+        <div class="card-back-pattern"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hilo-choice-btns" id="hilo-choice-btns">
+    <button class="btn btn-green" onclick="hiloGuess('high')" id="hilo-high-btn" disabled>
+      ⬆️ MÁS ALTO
+    </button>
+    <button class="btn btn-red" onclick="hiloGuess('low')" id="hilo-low-btn" disabled>
+      ⬇️ MÁS BAJO
+    </button>
+  </div>
+
+  <div style="padding: 0 20px 12px;">
+    <button class="btn btn-gold" id="hilo-cashout-btn" onclick="cashoutHilo()" disabled>
+      💰 RETIRAR GANANCIAS
+    </button>
+  </div>
+
+  <div class="bet-panel">
+    <h4>💰 Apuesta</h4>
+    <div class="bet-row">
+      <input type="number" class="bet-input" id="hilo-bet" value="100" min="10">
+    </div>
+    <div class="bet-quick">
+      <button class="bet-quick-btn" onclick="setBet('hilo',100)">100</button>
+      <button class="bet-quick-btn" onclick="setBet('hilo',500)">500</button>
+      <button class="bet-quick-btn" onclick="setBet('hilo',1000)">1K</button>
+      <button class="bet-quick-btn" onclick="halfBet('hilo')">½</button>
+      <button class="bet-quick-btn" onclick="doubleBet('hilo')">2×</button>
+      <button class="bet-quick-btn" onclick="maxBet('hilo')">MAX</button>
+    </div>
+  </div>
+
+  <div style="padding: 0 20px;">
+    <button class="btn btn-primary" id="hilo-start-btn" onclick="startHilo()">🃏 INICIAR</button>
+  </div>
+</div>
+
+<!-- ==================== FLIP GAME ==================== -->
+<div class="screen game-screen" id="screen-flip">
+  <div class="game-header">
+    <div class="back-btn" onclick="closeGame()">←</div>
+    <div class="game-title">🪙 FLIP</div>
+    <div class="balance-mini">🪙 <span id="flip-balance">0</span></div>
+  </div>
+
+  <div class="flip-arena">
+    <div class="flip-result-label" id="flip-result-label">Elige y lanza</div>
+    <div class="coin-3d" id="flip-coin">
+      <div class="coin-3d-inner" id="flip-coin-inner">
+        <div class="coin-face">👑</div>
+        <div class="coin-back">🌟</div>
+      </div>
+    </div>
+    <div style="font-size:13px; color:var(--text3);">👑 Cara &nbsp;|&nbsp; 🌟 Cruz</div>
+  </div>
+
+  <div class="flip-choice-row">
+    <div class="choice-btn" id="flip-choice-heads" onclick="selectFlip('heads')">
+      <div class="choice-btn-icon">👑</div>
+      <div class="choice-btn-label">CARA</div>
+      <div class="choice-pct">✕ 1.95</div>
+    </div>
+    <div class="choice-btn" id="flip-choice-tails" onclick="selectFlip('tails')">
+      <div class="choice-btn-icon">🌟</div>
+      <div class="choice-btn-label">CRUZ</div>
+      <div class="choice-pct">✕ 1.95</div>
+    </div>
+  </div>
+
+  <div class="bet-panel">
+    <h4>💰 Apuesta</h4>
+    <div class="bet-row">
+      <input type="number" class="bet-input" id="flip-bet" value="100" min="10">
+    </div>
+    <div class="bet-quick">
+      <button class="bet-quick-btn" onclick="setBet('flip',100)">100</button>
+      <button class="bet-quick-btn" onclick="setBet('flip',500)">500</button>
+      <button class="bet-quick-btn" onclick="setBet('flip',1000)">1K</button>
+      <button class="bet-quick-btn" onclick="setBet('flip',5000)">5K</button>
+      <button class="bet-quick-btn" onclick="halfBet('flip')">½</button>
+      <button class="bet-quick-btn" onclick="doubleBet('flip')">2×</button>
+      <button class="bet-quick-btn" onclick="maxBet('flip')">MAX</button>
+    </div>
+  </div>
+
+  <div style="padding: 0 20px;">
+    <button class="btn btn-primary" id="flip-launch-btn" onclick="launchFlip()">🪙 LANZAR MONEDA</button>
+  </div>
+</div>
+
+<!-- ==================== CRASH GAME ==================== -->
+<div class="screen game-screen" id="screen-crash">
+  <div class="game-header">
+    <div class="back-btn" onclick="closeGame()">←</div>
+    <div class="game-title">🚀 CRASH</div>
+    <div class="balance-mini">🪙 <span id="crash-balance">0</span></div>
+  </div>
+
+  <div class="crash-canvas-wrap">
+    <canvas id="crash-canvas" width="440" height="230"></canvas>
+    <div class="crash-status" id="crash-status">EN ESPERA</div>
+    <div class="crash-multiplier-overlay">
+      <div class="crash-multi-value" id="crash-multi-value">1.00×</div>
+      <div class="crash-multi-label" id="crash-multi-label">MULTIPLICADOR</div>
+    </div>
+    <div class="crash-rocket" id="crash-rocket" style="left:10%;bottom:10%">🚀</div>
+  </div>
+
+  <div class="crash-info-row">
+    <div class="crash-info-pill">
+      <div class="label">Apuesta</div>
+      <div class="value" id="crash-bet-display">0</div>
+    </div>
+    <div class="crash-info-pill">
+      <div class="label">Ganancia actual</div>
+      <div class="value" id="crash-profit-display">0</div>
+    </div>
+    <div class="crash-info-pill">
+      <div class="label">Último crash</div>
+      <div class="value" id="crash-last">–</div>
+    </div>
+  </div>
+
+  <div class="bet-panel">
+    <h4>💰 Apuesta</h4>
+    <div class="bet-row">
+      <input type="number" class="bet-input" id="crash-bet" value="100" min="10">
+    </div>
+    <div class="bet-quick">
+      <button class="bet-quick-btn" onclick="setBet('crash',100)">100</button>
+      <button class="bet-quick-btn" onclick="setBet('crash',500)">500</button>
+      <button class="bet-quick-btn" onclick="setBet('crash',1000)">1K</button>
+      <button class="bet-quick-btn" onclick="setBet('crash',5000)">5K</button>
+      <button class="bet-quick-btn" onclick="halfBet('crash')">½</button>
+      <button class="bet-quick-btn" onclick="doubleBet('crash')">2×</button>
+      <button class="bet-quick-btn" onclick="maxBet('crash')">MAX</button>
+    </div>
+  </div>
+
+  <div class="inline-btns">
+    <button class="btn btn-primary" id="crash-start-btn" onclick="startCrash()">🚀 INICIAR</button>
+    <button class="btn btn-gold" id="crash-cashout-btn" onclick="cashoutCrash()" disabled>💰 RETIRAR</button>
+  </div>
+</div>
+
+<!-- ==================== COME GAME ==================== -->
+<div class="screen game-screen" id="screen-come">
+  <div class="game-header">
+    <div class="back-btn" onclick="closeGame()">←</div>
+    <div class="game-title">👾 COME</div>
+    <div class="balance-mini">🪙 <span id="come-balance">0</span></div>
+  </div>
+
+  <div class="come-hud">
+    <div class="come-hud-pill">
+      <div class="label">Multiplicador</div>
+      <div class="value" id="come-multiplier">1.00×</div>
+    </div>
+    <div class="come-hud-pill">
+      <div class="label">Comidas</div>
+      <div class="value" id="come-eaten">0</div>
+    </div>
+    <div class="come-hud-pill">
+      <div class="label">Ganancia</div>
+      <div class="value" id="come-profit">0</div>
+    </div>
+  </div>
+
+  <div class="come-canvas-wrap" id="come-canvas-wrap">
+    <canvas id="come-canvas" width="440" height="340"></canvas>
+    <div class="come-overlay-text" id="come-overlay">
+      <h2>👾 COME</h2>
+      <p>Atrapa comida y acumula multiplicadores</p>
+      <p style="margin-top:12px; font-size:12px; color:var(--text3)">Desliza para mover al personaje</p>
+    </div>
+  </div>
+
+  <div class="bet-panel" style="margin-top:10px;">
+    <h4>💰 Apuesta</h4>
+    <div class="bet-row">
+      <input type="number" class="bet-input" id="come-bet" value="100" min="10">
+    </div>
+    <div class="bet-quick">
+      <button class="bet-quick-btn" onclick="setBet('come',100)">100</button>
+      <button class="bet-quick-btn" onclick="setBet('come',500)">500</button>
+      <button class="bet-quick-btn" onclick="setBet('come',1000)">1K</button>
+      <button class="bet-quick-btn" onclick="halfBet('come')">½</button>
+      <button class="bet-quick-btn" onclick="doubleBet('come')">2×</button>
+      <button class="bet-quick-btn" onclick="maxBet('come')">MAX</button>
+    </div>
+  </div>
+
+  <div class="inline-btns">
+    <button class="btn btn-primary" id="come-start-btn" onclick="startCome()">👾 INICIAR</button>
+    <button class="btn btn-gold" id="come-cashout-btn" onclick="cashoutCome()" disabled>💰 RETIRAR</button>
+  </div>
+</div>
+
+<!-- ==================== RESULT OVERLAY ==================== -->
+<div class="result-overlay" id="result-overlay" onclick="closeResult()">
+  <div class="result-box" id="result-box" onclick="event.stopPropagation()">
+    <span class="result-emoji" id="result-emoji">🎉</span>
+    <div class="result-title" id="result-title">¡GANASTE!</div>
+    <div class="result-amount" id="result-amount">+1000 🪙</div>
+    <div style="font-size:13px; color:var(--text3); margin:6px 0 16px;" id="result-sub"></div>
+    <button class="btn btn-primary" onclick="closeResult()">CONTINUAR</button>
+  </div>
+</div>
+
+<!-- ==================== LEVEL UP ==================== -->
+<div class="levelup-overlay" id="levelup-overlay" onclick="closeLevelup()">
+  <div class="levelup-box">
+    <div class="big-emoji">⬆️</div>
+    <h2>¡NIVEL ARRIBA!</h2>
+    <div style="font-size:28px; font-weight:700; margin-top:8px;">
+      Nivel <span id="levelup-num">2</span>
+    </div>
+    <div style="margin-top:20px;">
+      <button class="btn btn-gold" onclick="closeLevelup()">🎉 ¡GENIAL!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TOAST ==================== -->
+<div class="toast" id="toast"></div>
+<div class="achievements-banner" id="achieve-banner"></div>
+
+<script>
+/* ============================================================
+   FIX 1: DEVICE SELECT — choose mobile or PC layout
+   Saved to LocalStorage, never asked again once chosen
+============================================================ */
+const DEVICE_KEY = 'apex_device_v1';
+
+function selectDevice(type) {
+  localStorage.setItem(DEVICE_KEY, type);
+  applyDevice(type);
+
+  // Transition: hide device screen, show home
+  const deviceScreen = document.getElementById('screen-device');
+  const homeScreen   = document.getElementById('screen-home');
+  deviceScreen.classList.add('slide-out');
+  setTimeout(() => {
+    deviceScreen.classList.remove('active', 'slide-out');
+    homeScreen.classList.add('active');
+  }, 300);
+}
+
+function applyDevice(type) {
+  if (type === 'pc') {
+    document.body.classList.add('pc-mode');
+  } else {
+    document.body.classList.remove('pc-mode');
+  }
+}
+
+function checkDeviceOnLoad() {
+  const saved = localStorage.getItem(DEVICE_KEY);
+  if (saved) {
+    // Skip device screen — go straight to home
+    applyDevice(saved);
+    document.getElementById('screen-device').classList.remove('active');
+    document.getElementById('screen-home').classList.add('active');
+  }
+  // else: device screen stays active (default)
+}
+
+/* ============================================================
+   FIX 3: SVG DICE RENDERER
+   Draws proper dots on a white die face for values 1–6
+============================================================ */
+const DICE_DOT_POSITIONS = {
+  1: [[50,50]],
+  2: [[25,25],[75,75]],
+  3: [[25,25],[50,50],[75,75]],
+  4: [[25,25],[75,25],[25,75],[75,75]],
+  5: [[25,25],[75,25],[50,50],[25,75],[75,75]],
+  6: [[25,25],[75,25],[25,50],[75,50],[25,75],[75,75]],
+};
+
+function renderDie(el, value) {
+  const dots = DICE_DOT_POSITIONS[value] || DICE_DOT_POSITIONS[1];
+  const circles = dots.map(([cx,cy]) =>
+    `<circle cx="${cx}" cy="${cy}" r="7" fill="#1a1a2e"/>`
+  ).join('');
+  el.innerHTML = `
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      ${circles}
+    </svg>`;
+}
+
+/* ============================================================
+   STATE & LOCALSTORAGE
+============================================================ */
+const STATE_KEY = 'apex_casino_v1';
+
+const EXP_PER_LEVEL = 500;
+const BONUS_AMOUNT  = 1000;
+const BONUS_INTERVAL = 150; // 2 min 30 sec
+
+let state = loadState();
+
+function defaultState() {
+  return {
+    coins: 5000,
+    exp: 0,
+    level: 1,
+    plays: 0,
+    wins: 0,
+    lastBonus: Date.now(),
+    achievements: []
+  };
+}
+
+function loadState() {
+  try {
+    const s = localStorage.getItem(STATE_KEY);
+    if (s) return Object.assign(defaultState(), JSON.parse(s));
+  } catch(e) {}
+  return defaultState();
+}
+
+function saveState() {
+  try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+/* ============================================================
+   UI UPDATE
+============================================================ */
+function updateUI() {
+  const fmt = n => n.toLocaleString('es');
+  document.getElementById('coins-display').textContent = fmt(Math.floor(state.coins));
+  document.getElementById('stat-level').textContent    = state.level;
+  document.getElementById('stat-exp').textContent      = state.exp;
+  document.getElementById('stat-plays').textContent    = state.plays;
+
+  const expForLevel = state.level * EXP_PER_LEVEL;
+  const pct = Math.min(100, (state.exp / expForLevel) * 100);
+  document.getElementById('exp-bar').style.width = pct + '%';
+
+  // update game balance displays
+  ['dice','mines','hilo'].forEach(g => {
+    const el = document.getElementById(g + '-balance');
+    if (el) el.textContent = fmt(Math.floor(state.coins));
+  });
+}
+
+/* ============================================================
+   BONUS TIMER
+============================================================ */
+let bonusInterval;
+
+function startBonusTimer() {
+  clearInterval(bonusInterval);
+  bonusInterval = setInterval(tickBonus, 1000);
+  tickBonus();
+}
+
+function tickBonus() {
+  const elapsed  = Math.floor((Date.now() - state.lastBonus) / 1000);
+  const remaining = Math.max(0, BONUS_INTERVAL - elapsed);
+  const bar = document.getElementById('bonus-bar');
+  const timer = document.getElementById('bonus-timer');
+
+  if (remaining === 0) {
+    bar.className = 'bonus-bar bonus-ready';
+    timer.textContent = '¡CLICK!';
+    bar.onclick = collectBonus;
+  } else {
+    bar.className = 'bonus-bar';
+    bar.onclick = null;
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    timer.textContent = m + ':' + String(s).padStart(2,'0');
+  }
+}
+
+function collectBonus() {
+  state.coins += BONUS_AMOUNT;
+  state.lastBonus = Date.now();
+  saveState(); updateUI();
+  showToast('⚡ +1.000 monedas recibidas!');
+  spawnCoins(document.getElementById('bonus-bar'));
+  tickBonus();
+}
+
+/* ============================================================
+   SCREEN NAVIGATION
+============================================================ */
+let currentGame = null;
+
+function openGame(name) {
+  vibrate(30);
+  const home = document.getElementById('screen-home');
+  const target = document.getElementById('screen-' + name);
+  if (!target) return;
+
+  home.classList.add('slide-out');
+  setTimeout(() => {
+    home.classList.remove('active','slide-out');
+    target.classList.add('active');
+    target.scrollTop = 0;
+    currentGame = name;
+    resetGameUI(name);
+    updateUI();
+  }, 200);
+}
+
+function closeGame() {
+  vibrate(20);
+  const home   = document.getElementById('screen-home');
+  const current = document.getElementById('screen-' + currentGame);
+
+  current.classList.add('slide-out');
+  setTimeout(() => {
+    current.classList.remove('active','slide-out');
+    home.classList.add('active');
+    currentGame = null;
+    updateUI();
+  }, 200);
+}
+
+function resetGameUI(name) {
+  if (name === 'dice') {
+    diceChoice = null;
+    document.getElementById('dice-choice-high').classList.remove('selected');
+    document.getElementById('dice-choice-low').classList.remove('selected');
+    renderDie(document.getElementById('die1'), 1);
+    renderDie(document.getElementById('die2'), 2);
+    document.getElementById('dice-sum').textContent = '–';
+  }
+  if (name === 'mines') {
+    initMinesGrid();
+  }
+  if (name === 'hilo') {
+    hiloReset();
+  }
+  if (name === 'flip')  { flipReset(); }
+  if (name === 'crash') { crashReset(); }
+  if (name === 'come')  { comeReset(); }
+}
+
+/* ============================================================
+   ECONOMY HELPERS
+============================================================ */
+function getBet(game) {
+  const v = parseInt(document.getElementById(game + '-bet').value) || 100;
+  return Math.max(10, Math.min(v, state.coins));
+}
+function setBet(game, amount) {
+  document.getElementById(game + '-bet').value = Math.min(amount, state.coins);
+}
+function halfBet(game) {
+  const cur = getBet(game);
+  document.getElementById(game + '-bet').value = Math.max(10, Math.floor(cur / 2));
+}
+function doubleBet(game) {
+  const cur = getBet(game);
+  document.getElementById(game + '-bet').value = Math.min(cur * 2, state.coins);
+}
+function maxBet(game) {
+  document.getElementById(game + '-bet').value = state.coins;
+}
+
+function addEXP(amount) {
+  state.exp += amount;
+  const needed = state.level * EXP_PER_LEVEL;
+  if (state.exp >= needed) {
+    state.exp -= needed;
+    state.level++;
+    saveState(); updateUI();
+    showLevelUp(state.level);
+  }
+}
+
+function addCoins(amount) {
+  state.coins += amount;
+  if (state.coins < 0) state.coins = 0;
+  saveState(); updateUI();
+}
+
+/* ============================================================
+   RESULTS
+============================================================ */
+function showResult(win, amount, extraMsg = '') {
+  const overlay = document.getElementById('result-overlay');
+  const box     = document.getElementById('result-box');
+
+  document.getElementById('result-emoji').textContent  = win ? '🎉' : '💥';
+  document.getElementById('result-title').textContent  = win ? '¡GANASTE!' : '¡PERDISTE!';
+  document.getElementById('result-amount').textContent = win
+    ? '+' + amount.toLocaleString('es') + ' 🪙'
+    : '-' + Math.abs(amount).toLocaleString('es') + ' 🪙';
+  document.getElementById('result-sub').textContent    = extraMsg;
+
+  box.className = 'result-box ' + (win ? 'result-win' : 'result-lose');
+  overlay.classList.add('show');
+
+  if (win) {
+    vibrate([50, 30, 80]);
+    spawnCoins(overlay);
+  } else {
+    vibrate([100, 50, 100]);
+  }
+}
+
+function closeResult() {
+  document.getElementById('result-overlay').classList.remove('show');
+}
+
+/* ============================================================
+   LEVEL UP
+============================================================ */
+function showLevelUp(lvl) {
+  document.getElementById('levelup-num').textContent = lvl;
+  document.getElementById('levelup-overlay').classList.add('show');
+  vibrate([80,40,80,40,160]);
+}
+function closeLevelup() {
+  document.getElementById('levelup-overlay').classList.remove('show');
+}
+
+/* ============================================================
+   TOAST
+============================================================ */
+let toastTimeout;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ============================================================
+   VIBRATION
+============================================================ */
+function vibrate(pattern) {
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+/* ============================================================
+   COIN PARTICLES
+============================================================ */
+function spawnCoins(near) {
+  const rect = near.getBoundingClientRect ? near.getBoundingClientRect() : { left: 180, top: 300 };
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+
+  for (let i = 0; i < 8; i++) {
+    const el = document.createElement('div');
+    el.className = 'coin-particle';
+    el.textContent = '🪙';
+    el.style.left  = (cx + (Math.random()-0.5)*80) + 'px';
+    el.style.top   = cy + 'px';
+    el.style.animationDelay = (i * 80) + 'ms';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+  }
+}
+
+/* ============================================================
+   ACHIEVEMENTS
+============================================================ */
+const ACHIEVEMENTS = [
+  { id:'first_win',  label:'🏆 Primera Victoria!',     check: s => s.wins >= 1    },
+  { id:'win10',      label:'🔥 10 Victorias!',          check: s => s.wins >= 10   },
+  { id:'rich',       label:'💰 ¡Rico! 50.000 monedas',  check: s => s.coins >= 50000 },
+  { id:'lvl5',       label:'⬆️ Alcanzaste Nivel 5!',   check: s => s.level >= 5   },
+  { id:'plays50',    label:'🎮 50 Jugadas!',             check: s => s.plays >= 50  },
+];
+
+function checkAchievements() {
+  ACHIEVEMENTS.forEach(a => {
+    if (!state.achievements.includes(a.id) && a.check(state)) {
+      state.achievements.push(a.id);
+      saveState();
+      showAchievement(a.label);
+    }
+  });
+}
+
+function showAchievement(text) {
+  const b = document.getElementById('achieve-banner');
+  b.textContent = text;
+  b.classList.add('show');
+  setTimeout(() => b.classList.remove('show'), 3000);
+}
+
+/* ============================================================
+   ============  DICE GAME LOGIC  ============
+============================================================ */
+// FIX 3: DOM-dot dice. 9 cells (3×3 grid). Map shows which dots are visible.
+// Cell order: [TL, TC, TR,  ML, MC, MR,  BL, BC, BR]
+const DICE_DOT_MAP = {
+  1: [0,0,0, 0,1,0, 0,0,0],
+  2: [1,0,0, 0,0,0, 0,0,1],
+  3: [1,0,0, 0,1,0, 0,0,1],
+  4: [1,0,1, 0,0,0, 1,0,1],
+  5: [1,0,1, 0,1,0, 1,0,1],
+  6: [1,0,1, 1,0,1, 1,0,1],
+};
+
+function buildDie(el) {
+  // Build 9 dot cells inside the die div
+  el.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    const d = document.createElement('div');
+    d.className = 'die-dot hidden';
+    el.appendChild(d);
+  }
+}
+
+function renderDie(el, value) {
+  // If the dots haven't been built yet, build them
+  if (el.children.length !== 9) buildDie(el);
+  const map  = DICE_DOT_MAP[value] || DICE_DOT_MAP[1];
+  const dots = el.querySelectorAll('.die-dot');
+  dots.forEach((d, i) => d.classList.toggle('hidden', !map[i]));
+}
+
+let diceChoice = null; // 'high' | 'low'
+
+function selectDiceChoice(choice) {
+  vibrate(15);
+  diceChoice = choice;
+  document.getElementById('dice-choice-high').classList.toggle('selected', choice==='high');
+  document.getElementById('dice-choice-low').classList.toggle('selected', choice==='low');
+}
+
+function rollDice() {
+  if (!diceChoice) { showToast('⚠️ Elige Mayor o Menor primero'); return; }
+  const bet = getBet('dice');
+  if (bet > state.coins) { showToast('❌ No tienes suficientes monedas'); return; }
+
+  vibrate(40);
+  const btn = document.getElementById('dice-roll-btn');
+  btn.disabled = true;
+
+  const die1El = document.getElementById('die1');
+  const die2El = document.getElementById('die2');
+  die1El.classList.add('rolling');
+  die2El.classList.add('rolling');
+
+  // Animate intermediate random faces during roll
+  let ticks = 0;
+  const tickInterval = setInterval(() => {
+    renderDie(die1El, Math.ceil(Math.random()*6));
+    renderDie(die2El, Math.ceil(Math.random()*6));
+    ticks++;
+    if (ticks >= 10) clearInterval(tickInterval);
+  }, 80);
+
+  setTimeout(() => {
+    die1El.classList.remove('rolling');
+    die2El.classList.remove('rolling');
+
+    const d1 = Math.ceil(Math.random()*6);
+    const d2 = Math.ceil(Math.random()*6);
+    const sum = d1 + d2;
+
+    renderDie(die1El, d1);
+    renderDie(die2El, d2);
+    document.getElementById('dice-sum').textContent = sum;
+
+    const win = (diceChoice==='high' && sum > 6) || (diceChoice==='low' && sum <= 6);
+    const payout = Math.floor(bet * 1.9);
+
+    state.plays++;
+    if (win) {
+      state.wins++;
+      addCoins(payout - bet);
+      addEXP(Math.floor(bet / 20));
+      showResult(true, payout, '+' + Math.floor(bet/20) + ' EXP');
+      spawnCoins(die1El);
+    } else {
+      addCoins(-bet);
+      showResult(false, bet, 'Suma: ' + sum);
+    }
+
+    checkAchievements();
+    btn.disabled = false;
+    updateUI();
+  }, 900);
+}
+
+/* ============================================================
+   ============  MINES GAME LOGIC  ============
+============================================================ */
+let minesState = {
+  active: false,
+  bombs: [],
+  revealed: [],
+  bet: 0,
+  count: 3,
+  multiplier: 1,
+};
+
+const MINES_ROWS = 7;
+const MINES_COLS = 5;
+const MINES_CELLS = MINES_ROWS * MINES_COLS; // 35
+
+function setMinesCount(n) {
+  if (minesState.active) return;
+  minesState.count = n;
+  document.querySelectorAll('.mines-count-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.startsWith(n));
+  });
+}
+
+function initMinesGrid() {
+  minesState.active = false;
+  minesState.bombs  = [];
+  minesState.revealed = new Array(MINES_CELLS).fill(false);
+  minesState.multiplier = 1;
+
+  const grid = document.getElementById('mines-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < MINES_CELLS; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'mine-cell';
+    cell.dataset.index = i;
+    cell.innerHTML = '❓';
+    cell.onclick = () => clickMineCell(i);
+    grid.appendChild(cell);
+  }
+
+  document.getElementById('mines-multiplier').textContent = '1.00×';
+  document.getElementById('mines-profit').textContent     = '0';
+  document.getElementById('mines-safe-count').textContent = '0';
+  document.getElementById('mines-start-btn').disabled     = false;
+  document.getElementById('mines-cashout-btn').disabled   = true;
+  document.getElementById('mines-bet').disabled           = false;
+}
+
+function startMines() {
+  const bet = getBet('mines');
+  if (bet > state.coins) { showToast('❌ No tienes suficientes monedas'); return; }
+
+  minesState.bet      = bet;
+  minesState.active   = true;
+  minesState.revealed = new Array(MINES_CELLS).fill(false);
+  minesState.bombs    = [];
+  minesState.multiplier = 1.0;
+
+  // Place bombs randomly
+  while (minesState.bombs.length < minesState.count) {
+    const idx = Math.floor(Math.random() * MINES_CELLS);
+    if (!minesState.bombs.includes(idx)) minesState.bombs.push(idx);
+  }
+
+  addCoins(-bet);
+  updateUI();
+  vibrate(20);
+
+  document.getElementById('mines-start-btn').disabled   = true;
+  document.getElementById('mines-cashout-btn').disabled = false;
+  document.getElementById('mines-bet').disabled         = true;
+
+  // Reset cells visually
+  document.querySelectorAll('.mine-cell').forEach(c => {
+    c.className = 'mine-cell';
+    c.innerHTML = '❓';
+  });
+
+  document.getElementById('mines-multiplier').textContent = '1.00×';
+  document.getElementById('mines-profit').textContent     = '0';
+  document.getElementById('mines-safe-count').textContent = '0';
+}
+
+function getMinesMultiplier(safe, bombs, total) {
+  // Combinatorial calculation: increases with each safe cell
+  if (safe === 0) return 1.0;
+  let mult = 1.0;
+  for (let i = 0; i < safe; i++) {
+    const remaining = total - i;
+    const safeCells = remaining - bombs;
+    mult *= remaining / safeCells * 0.97; // 3% house edge
+  }
+  return mult;
+}
+
+function clickMineCell(idx) {
+  if (!minesState.active) return;
+  if (minesState.revealed[idx]) return;
+
+  vibrate(15);
+  minesState.revealed[idx] = true;
+  const cell = document.querySelector(`.mine-cell[data-index="${idx}"]`);
+  const isBomb = minesState.bombs.includes(idx);
+
+  if (isBomb) {
+    // Reveal all bombs
+    cell.className = 'mine-cell revealed-bomb';
+    cell.innerHTML = '💣';
+
+    minesState.active = false;
+    state.plays++;
+    saveState(); updateUI();
+    checkAchievements();
+
+    setTimeout(() => {
+      minesState.bombs.forEach(bi => {
+        const bc = document.querySelector(`.mine-cell[data-index="${bi}"]`);
+        if (bc) { bc.className = 'mine-cell revealed-bomb'; bc.innerHTML = '💣'; }
+      });
+      document.querySelectorAll('.mine-cell').forEach(c => c.classList.add('game-over'));
+    }, 200);
+
+    document.getElementById('mines-start-btn').disabled   = false;
+    document.getElementById('mines-cashout-btn').disabled = true;
+    document.getElementById('mines-bet').disabled         = false;
+
+    showResult(false, minesState.bet, '¡Explotaste una bomba!');
+
+  } else {
+    cell.className = 'mine-cell revealed-safe';
+    cell.innerHTML = '💎';
+
+    const safeCount = minesState.revealed.filter(Boolean).length;
+    minesState.multiplier = getMinesMultiplier(safeCount, minesState.count, MINES_CELLS);
+
+    const profit = Math.floor(minesState.bet * minesState.multiplier);
+    document.getElementById('mines-multiplier').textContent = minesState.multiplier.toFixed(2) + '×';
+    document.getElementById('mines-profit').textContent     = profit.toLocaleString('es');
+    document.getElementById('mines-safe-count').textContent = safeCount;
+
+    // Check if all safe cells revealed (win by clearing)
+    const totalSafe = MINES_CELLS - minesState.count;
+    if (safeCount >= totalSafe) {
+      cashoutMines();
+    }
+  }
+}
+
+function cashoutMines() {
+  if (!minesState.active) return;
+  minesState.active = false;
+
+  const payout = Math.floor(minesState.bet * minesState.multiplier);
+  addCoins(payout);
+  addEXP(Math.floor(minesState.bet / 15));
+  state.plays++;
+  state.wins++;
+  checkAchievements();
+  saveState(); updateUI();
+
+  document.getElementById('mines-start-btn').disabled   = false;
+  document.getElementById('mines-cashout-btn').disabled = true;
+  document.getElementById('mines-bet').disabled         = false;
+
+  showResult(true, payout, minesState.multiplier.toFixed(2) + '× multiplicador · +' + Math.floor(minesState.bet/15) + ' EXP');
+}
+
+/* ============================================================
+   ============  HILO GAME LOGIC  ============
+============================================================ */
+// FIX: A es la carta MÁS ALTA (14). Orden: 2<3<...<10<J<Q<K<A
+const CARD_RANKS  = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const CARD_SUITS  = ['♥','♦','♣','♠'];
+const CARD_VALUES = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,J:11,Q:12,K:13,A:14};
+
+let hiloState = {
+  active: false,
+  currentCard: null,
+  history: [],
+  multiplier: 1.0,
+  bet: 0,
+  deck: [],
+};
+
+function shuffleDeck() {
+  const deck = [];
+  CARD_RANKS.forEach(r => CARD_SUITS.forEach(s => deck.push({rank:r, suit:s})));
+  for (let i = deck.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+function drawCard() {
+  if (!hiloState.deck.length) hiloState.deck = shuffleDeck();
+  return hiloState.deck.pop();
+}
+
+function cardElement(card, isCurrent = false) {
+  const div = document.createElement('div');
+  const isRed = card.suit === '♥' || card.suit === '♦';
+  div.className = 'playing-card' + (isRed?' red-card':' black-card') + (isCurrent?' current':'');
+  div.innerHTML = `<div class="rank">${card.rank}</div><div class="suit">${card.suit}</div>`;
+  return div;
+}
+
+function hiloReset() {
+  hiloState = {
+    active: false, currentCard: null,
+    history: [], multiplier: 1.0, bet: 0,
+    deck: shuffleDeck(),
+  };
+
+  document.getElementById('hilo-card-display').innerHTML =
+    '<div class="playing-card face-down"><div class="card-back-pattern"></div></div>';
+  document.getElementById('hilo-multiplier').textContent = '1.00';
+  document.getElementById('hilo-high-btn').disabled      = true;
+  document.getElementById('hilo-low-btn').disabled       = true;
+  document.getElementById('hilo-cashout-btn').disabled   = true;
+  document.getElementById('hilo-start-btn').disabled     = false;
+  document.getElementById('hilo-bet').disabled           = false;
+}
+
+function startHilo() {
+  const bet = getBet('hilo');
+  if (bet > state.coins) { showToast('❌ No tienes suficientes monedas'); return; }
+
+  hiloState.bet      = bet;
+  hiloState.active   = true;
+  hiloState.history  = [];
+  hiloState.multiplier = 1.0;
+  hiloState.deck     = shuffleDeck();
+  hiloState.currentCard = drawCard();
+
+  addCoins(-bet);
+  updateUI(); vibrate(20);
+
+  document.getElementById('hilo-high-btn').disabled    = false;
+  document.getElementById('hilo-low-btn').disabled     = false;
+  document.getElementById('hilo-cashout-btn').disabled = false;
+  document.getElementById('hilo-start-btn').disabled   = true;
+  document.getElementById('hilo-bet').disabled         = true;
+  document.getElementById('hilo-multiplier').textContent = '1.00';
+
+  renderHiloCards();
+}
+
+function renderHiloCards() {
+  const display = document.getElementById('hilo-card-display');
+  display.innerHTML = '';
+
+  // Show last 3 history cards (small)
+  const recent = hiloState.history.slice(-3);
+  recent.forEach(c => {
+    const el = cardElement(c, false);
+    el.style.opacity = '0.6';
+    display.appendChild(el);
+  });
+
+  // Current card
+  if (hiloState.currentCard) {
+    display.appendChild(cardElement(hiloState.currentCard, true));
+  }
+}
+
+function hiloGuess(guess) {
+  if (!hiloState.active) return;
+  vibrate(15);
+
+  const nextCard = drawCard();
+  const curVal   = CARD_VALUES[hiloState.currentCard.rank];
+  const nextVal  = CARD_VALUES[nextCard.rank];
+
+  // Win condition
+  const win = guess === 'high' ? nextVal >= curVal : nextVal <= curVal;
+
+  hiloState.history.push(hiloState.currentCard);
+  hiloState.currentCard = nextCard;
+
+  if (win) {
+    // Calcular multiplicador según probabilidad CORREGIDA (A=14, rango 2-14)
+    // "high" gana con cartas >= curVal → hay (14 - curVal + 1) cartas ganadoras de 13
+    const winCards = guess === 'high'
+      ? (14 - curVal + 1)   // cartas desde curVal hasta A(14)
+      : (curVal - 2 + 1);   // cartas desde 2 hasta curVal
+    const prob   = Math.max(0.08, winCards / 13);
+    const boost  = Math.max(1.04, (1 / prob) * 0.95); // 5% house edge
+    hiloState.multiplier *= boost;
+
+    document.getElementById('hilo-multiplier').textContent = hiloState.multiplier.toFixed(2);
+    renderHiloCards();
+    showToast('✅ ¡Correcto! × ' + hiloState.multiplier.toFixed(2));
+  } else {
+    hiloState.active = false;
+    state.plays++;
+    saveState(); updateUI();
+    checkAchievements();
+
+    renderHiloCards();
+    document.getElementById('hilo-high-btn').disabled    = true;
+    document.getElementById('hilo-low-btn').disabled     = true;
+    document.getElementById('hilo-cashout-btn').disabled = true;
+    document.getElementById('hilo-start-btn').disabled   = false;
+    document.getElementById('hilo-bet').disabled         = false;
+
+    showResult(false, hiloState.bet, 'Carta: ' + nextCard.rank + nextCard.suit);
+  }
+}
+
+function cashoutHilo() {
+  if (!hiloState.active) return;
+  hiloState.active = false;
+
+  const payout = Math.floor(hiloState.bet * hiloState.multiplier);
+  addCoins(payout);
+  addEXP(Math.floor(hiloState.bet / 10));
+  state.plays++;
+  state.wins++;
+  checkAchievements();
+  saveState(); updateUI();
+
+  document.getElementById('hilo-high-btn').disabled    = true;
+  document.getElementById('hilo-low-btn').disabled     = true;
+  document.getElementById('hilo-cashout-btn').disabled = true;
+  document.getElementById('hilo-start-btn').disabled   = false;
+  document.getElementById('hilo-bet').disabled         = false;
+
+  showResult(true, payout, hiloState.multiplier.toFixed(2) + '× · +' + Math.floor(hiloState.bet/10) + ' EXP');
+}
+
+/* ============================================================
+   ============  FLIP GAME LOGIC  ============
+============================================================ */
+let flipChoice = null; // 'heads' | 'tails'
+let flipRunning = false;
+
+function flipReset() {
+  flipChoice = null;
+  flipRunning = false;
+  document.getElementById('flip-choice-heads').classList.remove('selected');
+  document.getElementById('flip-choice-tails').classList.remove('selected');
+  document.getElementById('flip-result-label').textContent = 'Elige y lanza';
+  document.getElementById('flip-result-label').style.color = 'var(--gold)';
+  const coinEl = document.getElementById('flip-coin');
+  coinEl.classList.remove('spinning', 'land-heads', 'land-tails');
+  document.getElementById('flip-launch-btn').disabled = false;
+}
+
+function selectFlip(choice) {
+  if (flipRunning) return;
+  vibrate(15);
+  flipChoice = choice;
+  document.getElementById('flip-choice-heads').classList.toggle('selected', choice==='heads');
+  document.getElementById('flip-choice-tails').classList.toggle('selected', choice==='tails');
+}
+
+function launchFlip() {
+  if (!flipChoice)   { showToast('⚠️ Elige Cara o Cruz primero'); return; }
+  if (flipRunning)   return;
+  const bet = getBet('flip');
+  if (bet > state.coins) { showToast('❌ No tienes suficientes monedas'); return; }
+
+  // Determine result BEFORE animation so we can land on the right face
+  const result = Math.random() < 0.5 ? 'heads' : 'tails';
+
+  flipRunning = true;
+  vibrate(30);
+  document.getElementById('flip-launch-btn').disabled = true;
+  document.getElementById('flip-result-label').textContent = '¡Girando...';
+  document.getElementById('flip-result-label').style.color = 'var(--text2)';
+
+  const coinEl  = document.getElementById('flip-coin');
+  const innerEl = document.getElementById('flip-coin-inner');
+
+  // Step 1: fast spin (0.9s)
+  coinEl.classList.remove('land-heads', 'land-tails');
+  // force reflow so animation restarts cleanly
+  void innerEl.offsetWidth;
+  coinEl.classList.add('spinning');
+
+  // Step 2: after spin ends, land on correct face
+  setTimeout(() => {
+    coinEl.classList.remove('spinning');
+    void innerEl.offsetWidth; // reflow
+    coinEl.classList.add(result === 'heads' ? 'land-heads' : 'land-tails');
+
+    const win    = result === flipChoice;
+    const payout = Math.floor(bet * 1.95);
+
+    const label = document.getElementById('flip-result-label');
+    label.textContent = result === 'heads' ? '👑 CARA' : '🌟 CRUZ';
+    label.style.color = win ? 'var(--green)' : 'var(--red)';
+
+    state.plays++;
+    if (win) {
+      state.wins++;
+      addCoins(payout - bet);
+      addEXP(Math.floor(bet / 25));
+      spawnCoins(document.getElementById('flip-coin'));
+      showResult(true, payout, '+' + Math.floor(bet/25) + ' EXP');
+    } else {
+      addCoins(-bet);
+      showResult(false, bet, result === 'heads' ? 'Salió 👑 CARA' : 'Salió 🌟 CRUZ');
+    }
+
+    checkAchievements(); saveState(); updateUI();
+    flipRunning = false;
+    document.getElementById('flip-launch-btn').disabled = false;
+  }, 950);
+}
+
+/* ============================================================
+   ============  CRASH GAME LOGIC  ============
+============================================================ */
+let crashState = {
+  active: false,
+  multiplier: 1.0,
+  crashPoint: 1.0,   // punto aleatorio donde explota
+  betAmount: 0,
+  cashedOut: false,
+  animFrame: null,
+  graphPoints: [],   // {x,y} normalizado [0-1]
+  startTime: 0,
+};
+
+function generateCrashPoint() {
+  // Distribución: mayoría entre 1-3×, raramente llega alto
+  const r = Math.random();
+  if (r < 0.40) return 1.0 + Math.random() * 0.8;   // 40%: 1.0–1.8
+  if (r < 0.70) return 1.8 + Math.random() * 1.5;   // 30%: 1.8–3.3
+  if (r < 0.88) return 3.3 + Math.random() * 3.0;   // 18%: 3.3–6.3
+  if (r < 0.96) return 6.3 + Math.random() * 8.0;   // 8%:  6.3–14.3
+  return 14.3 + Math.random() * 20;                  // 4%:  14.3–34.3
+}
+
+function crashReset() {
+  if (crashState.animFrame) cancelAnimationFrame(crashState.animFrame);
+  crashState = {
+    active: false, multiplier: 1.0, crashPoint: 1.0,
+    betAmount: 0, cashedOut: false, animFrame: null,
+    graphPoints: [], startTime: 0,
+  };
+
+  document.getElementById('crash-multi-value').textContent = '1.00×';
+  document.getElementById('crash-multi-value').className = 'crash-multi-value';
+  document.getElementById('crash-multi-label').textContent = 'MULTIPLICADOR';
+  document.getElementById('crash-status').textContent = 'EN ESPERA';
+  document.getElementById('crash-profit-display').textContent = '0';
+  document.getElementById('crash-bet-display').textContent = '0';
+  document.getElementById('crash-rocket').style.display = 'block';
+  document.getElementById('crash-rocket').style.bottom = '10%';
+  document.getElementById('crash-rocket').style.left   = '10%';
+  document.getElementById('crash-start-btn').disabled   = false;
+  document.getElementById('crash-cashout-btn').disabled = true;
+  document.getElementById('crash-bet').disabled         = false;
+  drawCrashGraph([]);
+}
+
+function drawCrashGraph(points) {
+  const canvas = document.getElementById('crash-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    ctx.beginPath(); ctx.moveTo(0, H * i/4); ctx.lineTo(W, H * i/4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W * i/4, 0); ctx.lineTo(W * i/4, H); ctx.stroke();
+  }
+
+  if (points.length < 2) return;
+
+  // Gradient fill under curve
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(0,230,118,0.25)');
+  grad.addColorStop(1, 'rgba(0,230,118,0)');
+
+  ctx.beginPath();
+  ctx.moveTo(points[0].x * W, H - points[0].y * H);
+  points.forEach(p => ctx.lineTo(p.x * W, H - p.y * H));
+  ctx.lineTo(points[points.length-1].x * W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Curve line
+  ctx.beginPath();
+  ctx.moveTo(points[0].x * W, H - points[0].y * H);
+  points.forEach(p => ctx.lineTo(p.x * W, H - p.y * H));
+  ctx.strokeStyle = '#00e676';
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = '#00e676';
+  ctx.shadowBlur = 8;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+function startCrash() {
+  const bet = getBet('crash');
+  if (bet > state.coins) { showToast('❌ No tienes suficientes monedas'); return; }
+
+  crashState.betAmount  = bet;
+  crashState.crashPoint = generateCrashPoint();
+  crashState.active     = true;
+  crashState.cashedOut  = false;
+  crashState.multiplier = 1.0;
+  crashState.graphPoints = [{x:0, y:0.02}];
+  crashState.startTime  = performance.now();
+
+  addCoins(-bet);
+  updateUI();
+
+  document.getElementById('crash-bet-display').textContent = bet.toLocaleString('es');
+  document.getElementById('crash-start-btn').disabled   = true;
+  document.getElementById('crash-cashout-btn').disabled = false;
+  document.getElementById('crash-bet').disabled         = true;
+  document.getElementById('crash-status').textContent   = '🚀 VOLANDO';
+  document.getElementById('crash-multi-value').className = 'crash-multi-value';
+
+  animateCrash();
+}
+
+function animateCrash() {
+  if (!crashState.active) return;
+
+  const elapsed = (performance.now() - crashState.startTime) / 1000; // seconds
+  // Exponential growth: mult = e^(0.15 * t)  (roughly doubles every 4.6s)
+  const mult = Math.pow(Math.E, 0.15 * elapsed);
+  crashState.multiplier = mult;
+
+  const multiEl = document.getElementById('crash-multi-value');
+  multiEl.textContent = mult.toFixed(2) + '×';
+
+  // Danger color above 3×
+  multiEl.className = mult >= 3 ? 'crash-multi-value danger' : 'crash-multi-value';
+
+  // Profit display
+  const profit = Math.floor(crashState.betAmount * mult);
+  document.getElementById('crash-profit-display').textContent = profit.toLocaleString('es');
+
+  // Graph point (x = time progress, y = mult progress normalised)
+  const maxT  = 30;
+  const xNorm = Math.min(elapsed / maxT, 0.98);
+  const yNorm = Math.min((mult - 1) / (crashState.crashPoint * 1.2), 0.95);
+  crashState.graphPoints.push({ x: xNorm, y: yNorm });
+  drawCrashGraph(crashState.graphPoints);
+
+  // Rocket position
+  const rocket = document.getElementById('crash-rocket');
+  rocket.style.left   = (8 + xNorm * 75) + '%';
+  rocket.style.bottom = (8 + yNorm * 78) + '%';
+
+  // Check crash
+  if (mult >= crashState.crashPoint) {
+    doCrashExplosion();
+    return;
+  }
+
+  crashState.animFrame = requestAnimationFrame(animateCrash);
+}
+
+function doCrashExplosion() {
+  crashState.active = false;
+  if (crashState.animFrame) cancelAnimationFrame(crashState.animFrame);
+
+  const rocket = document.getElementById('crash-rocket');
+  rocket.style.display = 'none';
+
+  // Explosion emoji
+  const exp = document.createElement('div');
+  exp.className = 'crash-explosion';
+  exp.textContent = '💥';
+  document.querySelector('.crash-canvas-wrap').appendChild(exp);
+  setTimeout(() => exp.remove(), 600);
+
+  const multiEl = document.getElementById('crash-multi-value');
+  multiEl.textContent = crashState.crashPoint.toFixed(2) + '×';
+  multiEl.className = 'crash-multi-value danger';
+  document.getElementById('crash-multi-label').textContent = '¡CRASH!';
+  document.getElementById('crash-status').textContent = '💥 CRASHEÓ';
+  document.getElementById('crash-last').textContent = crashState.crashPoint.toFixed(2) + '×';
+
+  document.getElementById('crash-cashout-btn').disabled = true;
+  document.getElementById('crash-start-btn').disabled   = false;
+  document.getElementById('crash-bet').disabled         = false;
+
+  if (!crashState.cashedOut) {
+    state.plays++;
+    saveState(); updateUI();
+    checkAchievements();
+    showResult(false, crashState.betAmount, 'Crasheó en ' + crashState.crashPoint.toFixed(2) + '×');
+  }
+
+  vibrate([100, 50, 150]);
+}
+
+function cashoutCrash() {
+  if (!crashState.active || crashState.cashedOut) return;
+  crashState.cashedOut = true;
+  crashState.active    = false;
+  if (crashState.animFrame) cancelAnimationFrame(crashState.animFrame);
+
+  const payout = Math.floor(crashState.betAmount * crashState.multiplier);
+  addCoins(payout);
+  addEXP(Math.floor(crashState.betAmount / 12));
+  state.plays++; state.wins++;
+  checkAchievements(); saveState(); updateUI();
+
+  document.getElementById('crash-cashout-btn').disabled = true;
+  document.getElementById('crash-start-btn').disabled   = false;
+  document.getElementById('crash-bet').disabled         = false;
+  document.getElementById('crash-status').textContent   = '✅ RETIRADO';
+
+  spawnCoins(document.getElementById('crash-rocket'));
+  showResult(true, payout, crashState.multiplier.toFixed(2) + '× · +' + Math.floor(crashState.betAmount/12) + ' EXP');
+}
+
+/* ============================================================
+   ============  COME (ARCADE) GAME LOGIC  ============
+   FIX 5A: use logical canvas coords (COME_W/H = 440×340) but
+   scale mouse/touch input by (logicalW / rect.width) so it
+   works on both mobile AND PC regardless of CSS display size.
+   FIX 5B: cashoutCome triggers 3-second ESCAPE MODE instead
+   of ending immediately — the game continues and player must
+   survive to collect the reward.
+============================================================ */
+const COME_W = 440;
+const COME_H = 340;
+let comeState = {
+  active: false,
+  escaping: false,       // FIX 5B: escape countdown active
+  escapeEnd: 0,          // timestamp when escape ends
+  player: { x: COME_W/2, y: COME_H - 50, w: 40, h: 40, targetX: COME_W/2 },
+  foods: [],
+  multiplier: 1.0,
+  eaten: 0,
+  bet: 0,
+  animFrame: null,
+  lastSpawn: 0,
+  spawnInterval: 1200,
+  startTime: 0,
+  missed: 0,
+  maxMiss: 3,
+  pendingPayout: 0,      // payout locked in when escape starts
+};
+
+const FOOD_TYPES = [
+  { emoji:'🍎', mult:1.10, size:28, speed:2.0 },
+  { emoji:'🍊', mult:1.15, size:28, speed:2.2 },
+  { emoji:'🍇', mult:1.20, size:26, speed:2.5 },
+  { emoji:'⭐', mult:1.50, size:30, speed:3.0 },
+  { emoji:'💎', mult:2.00, size:26, speed:3.5 },
+  { emoji:'🔥', mult:3.00, size:24, speed:4.5 },
+];
+
+function comeReset() {
+  if (comeState.animFrame) cancelAnimationFrame(comeState.animFrame);
+  comeState = {
+    active: false, escaping: false, escapeEnd: 0,
+    player: { x: COME_W/2, y: COME_H - 50, w: 40, h: 40, targetX: COME_W/2 },
+    foods: [], multiplier: 1.0, eaten: 0, bet: 0,
+    animFrame: null, lastSpawn: 0, spawnInterval: 1200,
+    startTime: 0, missed: 0, maxMiss: 3, pendingPayout: 0,
+  };
+  document.getElementById('come-multiplier').textContent = '1.00×';
+  document.getElementById('come-eaten').textContent = '0';
+  document.getElementById('come-profit').textContent = '0';
+  document.getElementById('come-start-btn').disabled    = false;
+  document.getElementById('come-cashout-btn').disabled  = true;
+  document.getElementById('come-bet').disabled          = false;
+  const overlay = document.getElementById('come-overlay');
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <h2>👾 COME</h2>
+    <p>Atrapa comida y acumula multiplicadores</p>
+    <p style="margin-top:12px; font-size:12px; color:var(--text3)">Desliza / mueve el ratón para moverte</p>`;
+
+  const canvas = document.getElementById('come-canvas');
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, COME_W, COME_H);
+  }
+  removeComeListeners();
+}
+
+function startCome() {
+  const bet = getBet('come');
+  if (bet > state.coins) { showToast('❌ No tienes suficientes monedas'); return; }
+
+  // Make canvas logical size match internal coords
+  const canvas = document.getElementById('come-canvas');
+  canvas.width  = COME_W;
+  canvas.height = COME_H;
+
+  comeState.bet         = bet;
+  comeState.active      = true;
+  comeState.escaping    = false;
+  comeState.multiplier  = 1.0;
+  comeState.eaten       = 0;
+  comeState.missed      = 0;
+  comeState.foods       = [];
+  comeState.startTime   = performance.now();
+  comeState.lastSpawn   = 0;
+  comeState.spawnInterval = 1200;
+  comeState.player      = { x: COME_W/2, y: COME_H - 50, w: 40, h: 40, targetX: COME_W/2 };
+
+  addCoins(-bet);
+  updateUI();
+
+  document.getElementById('come-overlay').style.display = 'none';
+  document.getElementById('come-start-btn').disabled    = true;
+  document.getElementById('come-cashout-btn').disabled  = false;
+  document.getElementById('come-bet').disabled          = true;
+
+  setupComeListeners();
+  animateCome();
+}
+
+function setupComeListeners() {
+  const wrap = document.getElementById('come-canvas-wrap');
+
+  // FIX 5A: always scale from CSS pixel to logical canvas pixels
+  function getLogicalX(clientX) {
+    const rect  = wrap.getBoundingClientRect();
+    const scale = COME_W / rect.width;        // logical / display ratio
+    return Math.max(20, Math.min(COME_W - 20, (clientX - rect.left) * scale));
+  }
+
+  wrap._touchMove = (e) => {
+    e.preventDefault();
+    if (!comeState.active) return;
+    comeState.player.targetX = getLogicalX(e.touches[0].clientX);
+  };
+  wrap._mouseMove = (e) => {
+    if (!comeState.active) return;
+    comeState.player.targetX = getLogicalX(e.clientX);
+  };
+  wrap.addEventListener('touchmove', wrap._touchMove, { passive: false });
+  wrap.addEventListener('mousemove', wrap._mouseMove);
+}
+
+function removeComeListeners() {
+  const wrap = document.getElementById('come-canvas-wrap');
+  if (!wrap) return;
+  if (wrap._touchMove) wrap.removeEventListener('touchmove', wrap._touchMove);
+  if (wrap._mouseMove) wrap.removeEventListener('mousemove', wrap._mouseMove);
+}
+
+function spawnFood(now) {
+  const elapsed = (now - comeState.startTime) / 1000;
+  comeState.spawnInterval = Math.max(450, 1200 - elapsed * 15);
+  if (now - comeState.lastSpawn < comeState.spawnInterval) return;
+  comeState.lastSpawn = now;
+
+  const weights = [40, 25, 15, 10, 6, 4];
+  const total = weights.reduce((a,b) => a+b, 0);
+  let r = Math.random() * total;
+  let idx = 0;
+  for (let i = 0; i < weights.length; i++) { r -= weights[i]; if (r <= 0) { idx = i; break; } }
+
+  const type = FOOD_TYPES[idx];
+  const speedBoost = 1 + elapsed * 0.03;
+  comeState.foods.push({
+    x: type.size/2 + Math.random() * (COME_W - type.size),
+    y: -type.size,
+    size: type.size,
+    speed: type.speed * speedBoost,
+    emoji: type.emoji,
+    mult: type.mult,
+  });
+}
+
+function animateCome() {
+  if (!comeState.active && !comeState.escaping) return;
+  const canvas = document.getElementById('come-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const now = performance.now();
+
+  ctx.clearRect(0, 0, COME_W, COME_H);
+
+  // Background stars
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  for (let i = 0; i < 30; i++) {
+    ctx.beginPath();
+    ctx.arc(((i*137+50) % COME_W), ((i*97+20) % COME_H), 1.2, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Spawn food (still spawns during escape mode — that's the challenge)
+  spawnFood(now);
+
+  // Player movement
+  const p = comeState.player;
+  p.x += (p.targetX - p.x) * 0.18;
+
+  // FIX 5B: Escape mode — draw countdown bar
+  if (comeState.escaping) {
+    const remaining = Math.max(0, comeState.escapeEnd - now);
+    const pct       = remaining / 3000;
+    // pulsing background tint
+    ctx.fillStyle = `rgba(245,200,66,${0.04 + 0.04 * Math.sin(now/150)})`;
+    ctx.fillRect(0, 0, COME_W, COME_H);
+    // countdown bar at top
+    ctx.fillStyle = '#252d45';
+    ctx.fillRect(0, 0, COME_W, 8);
+    ctx.fillStyle = pct > 0.4 ? '#f5c842' : '#ff1744';
+    ctx.fillRect(0, 0, COME_W * pct, 8);
+    // label
+    ctx.font = 'bold 13px Exo 2, sans-serif';
+    ctx.fillStyle = '#f5c842';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚡ ESCAPE: ' + (remaining/1000).toFixed(1) + 's', COME_W/2, 24);
+    ctx.textAlign = 'left';
+
+    if (remaining <= 0) {
+      // Survived! Pay out
+      comeState.escaping = false;
+      comeState.active   = false;
+      if (comeState.animFrame) cancelAnimationFrame(comeState.animFrame);
+      removeComeListeners();
+      finalizeComeWin();
+      return;
+    }
+  }
+
+  // Lives
+  for (let i = 0; i < comeState.maxMiss; i++) {
+    ctx.font = '16px serif';
+    ctx.fillText(i < comeState.maxMiss - comeState.missed ? '❤️' : '🖤', 8 + i*22, comeState.escaping ? 42 : 22);
+  }
+
+  // Player
+  ctx.font = `${p.w}px serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('👾', p.x, p.y + p.h * 0.8);
+
+  // Foods
+  comeState.foods = comeState.foods.filter(f => {
+    f.y += f.speed;
+
+    const hit = (
+      Math.abs(f.x - p.x) < (f.size/2 + p.w/2 - 6) &&
+      Math.abs(f.y - p.y) < (f.size/2 + p.h/2 - 6)
+    );
+
+    if (hit) {
+      if (!comeState.escaping) {
+        // Only count multiplier during active phase, not escape
+        comeState.multiplier *= f.mult;
+        comeState.eaten++;
+        const profit = Math.floor(comeState.bet * comeState.multiplier);
+        document.getElementById('come-multiplier').textContent = comeState.multiplier.toFixed(2) + '×';
+        document.getElementById('come-eaten').textContent = comeState.eaten;
+        document.getElementById('come-profit').textContent = profit.toLocaleString('es');
+      }
+      showToast('✨ ' + f.emoji + ' ×' + f.mult.toFixed(2));
+      vibrate(20);
+      return false;
+    }
+
+    if (f.y > COME_H + f.size) {
+      comeState.missed++;
+      vibrate(60);
+      if (comeState.missed >= comeState.maxMiss) {
+        endComeGame(false);
+        return false;
+      }
+      return false;
+    }
+
+    ctx.font = `${f.size}px serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(f.emoji, f.x, f.y);
+    ctx.font = 'bold 10px Exo 2, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('×' + f.mult.toFixed(2), f.x, f.y - f.size/2 - 2);
+    ctx.fillStyle = 'rgba(0,0,0,0)';
+    return true;
+  });
+
+  ctx.textAlign = 'left';
+  comeState.animFrame = requestAnimationFrame(animateCome);
+}
+
+function endComeGame(cashed) {
+  comeState.active   = false;
+  comeState.escaping = false;
+  if (comeState.animFrame) cancelAnimationFrame(comeState.animFrame);
+  removeComeListeners();
+
+  const overlay = document.getElementById('come-overlay');
+  overlay.style.display = 'flex';
+  overlay.innerHTML =
+    `<h2>${cashed ? '✅ ¡RETIRADO!' : '💥 ¡FALLASTE!'}</h2>
+     <p style="margin-top:10px; color:var(--text2)">Comidas: ${comeState.eaten}</p>`;
+
+  document.getElementById('come-start-btn').disabled   = false;
+  document.getElementById('come-cashout-btn').disabled = true;
+  document.getElementById('come-bet').disabled         = false;
+
+  if (!cashed) {
+    state.plays++;
+    saveState(); updateUI();
+    checkAchievements();
+    showResult(false, comeState.bet, 'Se te cayeron ' + comeState.missed + ' comidas');
+  }
+}
+
+function finalizeComeWin() {
+  // Called after escape mode timer ends successfully
+  const payout = comeState.pendingPayout;
+  addCoins(payout);
+  addEXP(Math.floor(comeState.bet / 10));
+  state.plays++; state.wins++;
+  checkAchievements(); saveState(); updateUI();
+
+  spawnCoins(document.getElementById('come-canvas'));
+  showResult(true, payout,
+    comeState.multiplier.toFixed(2) + '× · ' + comeState.eaten + ' comidas · +' + Math.floor(comeState.bet/10) + ' EXP');
+
+  const overlay = document.getElementById('come-overlay');
+  overlay.style.display = 'flex';
+  overlay.innerHTML =
+    `<h2>✅ ¡ESCAPASTE!</h2>
+     <p style="margin-top:10px; color:var(--text2)">Ganaste ${payout.toLocaleString('es')} 🪙</p>`;
+
+  document.getElementById('come-start-btn').disabled   = false;
+  document.getElementById('come-cashout-btn').disabled = true;
+  document.getElementById('come-bet').disabled         = false;
+}
+
+function cashoutCome() {
+  if (!comeState.active || comeState.escaping) return;
+  if (comeState.multiplier <= 1.0) {
+    showToast('⚠️ ¡Come algo primero!'); return;
+  }
+
+  // FIX 5B: Lock in payout, start 3-second ESCAPE MODE
+  comeState.pendingPayout = Math.floor(comeState.bet * comeState.multiplier);
+  comeState.escaping      = true;
+  comeState.escapeEnd     = performance.now() + 3000;
+  comeState.active        = true; // keep loop running
+
+  document.getElementById('come-cashout-btn').disabled = true;
+  showToast('⚡ ¡Modo escape! Sobrevive 3 segundos...');
+  vibrate([80, 40, 80]);
+}
+
+/* ============================================================
+   LOW BALANCE PROTECTION
+============================================================ */
+function checkLowBalance() {
+  if (state.coins < 50) {
+    state.coins = 2000;
+    saveState(); updateUI();
+    showToast('💸 ¡Recibiste 2.000 monedas de emergencia!');
+  }
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+function init() {
+  // FIX 1: Check if device was already selected
+  checkDeviceOnLoad();
+
+  updateUI();
+  startBonusTimer();
+  initMinesGrid();
+  hiloReset();
+  flipReset();
+  crashReset();
+  comeReset();
+  checkLowBalance();
+
+  // FIX 3: Render initial dice faces as SVG dots
+  renderDie(document.getElementById('die1'), 1);
+  renderDie(document.getElementById('die2'), 2);
+
+  // Re-check low balance every 30s
+  setInterval(checkLowBalance, 30000);
+}
+
+init();
+</script>
+</body>
+</html>
